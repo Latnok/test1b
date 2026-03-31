@@ -354,12 +354,6 @@ const App = () => {
     <main className="app-shell">
       <div className="hero">
         <div>
-          <p className="eyebrow">Million Items Selector</p>
-          <h1>Управление миллионом элементов без перегрузки интерфейса</h1>
-          <p className="hero-copy">
-            Левый контейнер показывает все невыбранные элементы, правый хранит глобальный выбранный порядок. Поиск не
-            сохраняется, а выбор и сортировка сохраняются на сервере.
-          </p>
           <div className="hero-notes">
             <div className="hero-note">
               <strong>Общее состояние для всех</strong>

@@ -27,7 +27,7 @@ export const AddItemForm = ({ busy, onSubmit }: AddItemFormProps) => {
         />
       </label>
       <button className="primary-button" disabled={busy || !value} type="submit">
-        {busy ? "Добавление..." : "Добавить"}
+        {busy ? "Отправляем в очередь..." : "Добавить"}
       </button>
     </form>
   );

@@ -73,7 +73,7 @@ test("selected list supports body drag reorder and persists the new order", asyn
   });
 
   const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1400 } });
   let reorderStatus = null;
 
   page.on("response", (response) => {
@@ -88,6 +88,8 @@ test("selected list supports body drag reorder and persists the new order", asyn
 
     const items = await waitForSelectedCount(page, 3);
     assert.equal(await items.count(), 3, "Expected exactly 3 filtered selected items");
+    await items.nth(0).scrollIntoViewIfNeeded();
+    await items.nth(2).scrollIntoViewIfNeeded();
 
     const initialOrder = await extractIds(page);
     assert.deepEqual(initialOrder, CONTROLLED_IDS);

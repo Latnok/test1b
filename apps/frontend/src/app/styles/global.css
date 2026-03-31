@@ -68,6 +68,31 @@ button {
   max-width: 66ch;
 }
 
+.hero-notes {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  max-width: 72ch;
+}
+
+.hero-note {
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(102, 125, 170, 0.14);
+  border-radius: 18px;
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+}
+
+.hero-note strong {
+  font-size: 0.95rem;
+}
+
+.hero-note span {
+  color: #5a6782;
+  line-height: 1.5;
+}
+
 .feedback {
   align-self: stretch;
   background: rgba(255, 255, 255, 0.72);
@@ -76,6 +101,31 @@ button {
   box-shadow: 0 18px 40px rgba(26, 39, 68, 0.08);
   color: #7f3e1c;
   padding: 18px 20px;
+}
+
+.feedback strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.feedback p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.feedback-info {
+  border-color: rgba(27, 116, 219, 0.18);
+  color: #174f93;
+}
+
+.feedback-success {
+  border-color: rgba(45, 143, 88, 0.2);
+  color: #1f6a42;
+}
+
+.feedback-error {
+  border-color: rgba(194, 91, 42, 0.2);
+  color: #7f3e1c;
 }
 
 .board {

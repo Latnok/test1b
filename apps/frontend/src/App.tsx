@@ -12,6 +12,14 @@ import { selectionService } from "./services/selection";
 
 import type { Item, SelectedItem } from "./types/item";
 
+type NoticeTone = "info" | "success" | "error";
+
+type NoticeState = {
+  detail: string;
+  title: string;
+  tone: NoticeTone;
+} | null;
+
 const matchesFilter = (id: number, filter: string) => {
   return filter.length === 0 || String(id).startsWith(filter);
 };
@@ -23,7 +31,7 @@ const App = () => {
   const [rightRefreshKey, setRightRefreshKey] = useState(0);
   const [availableItemsView, setAvailableItemsView] = useState<Item[]>([]);
   const [selectedItemsView, setSelectedItemsView] = useState<SelectedItem[]>([]);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [notice, setNotice] = useState<NoticeState>(null);
   const [isMutating, setIsMutating] = useState(false);
   const [draggingAvailableItem, setDraggingAvailableItem] = useState<Item | null>(null);
   const [isSelectedDropOver, setIsSelectedDropOver] = useState(false);
@@ -106,14 +114,24 @@ const App = () => {
     setRightRefreshKey((value) => value + 1);
   };
 
-  const withMutation = async (action: () => Promise<void>) => {
+  const withMutation = async (
+    action: () => Promise<void>,
+    pendingNotice?: NoticeState
+  ) => {
     setIsMutating(true);
-    setFeedback(null);
+
+    if (pendingNotice) {
+      setNotice(pendingNotice);
+    }
 
     try {
       await action();
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Что-то пошло не так");
+      setNotice({
+        detail: error instanceof Error ? error.message : "Попробуйте повторить действие ещё раз.",
+        title: "Операция не завершилась",
+        tone: "error"
+      });
     } finally {
       setIsMutating(false);
     }
@@ -123,21 +141,40 @@ const App = () => {
     const id = Number(value);
 
     if (!Number.isInteger(id) || id <= 0) {
-      setFeedback("Введите положительный ID");
+      setNotice({
+        detail: "Разрешены только положительные числовые ID.",
+        title: "Проверьте ID",
+        tone: "error"
+      });
       return;
     }
 
-    await withMutation(async () => {
-      const result = await itemsService.add([id]);
-      refreshBothLists();
+    await withMutation(
+      async () => {
+        const result = await itemsService.add([id]);
+        refreshBothLists();
 
-      if (result.createdIds.length > 0) {
-        setFeedback(`Добавлен ID ${result.createdIds.join(", ")}`);
-        return;
+        if (result.createdIds.length > 0) {
+          setNotice({
+            detail: `Теперь ID ${result.createdIds.join(", ")} можно найти в левом списке.`,
+            title: "ID добавлен",
+            tone: "success"
+          });
+          return;
+        }
+
+        setNotice({
+          detail: `ID ${result.skippedIds.join(", ")} уже был в системе, повторное добавление не потребовалось.`,
+          title: "ID уже существует",
+          tone: "info"
+        });
+      },
+      {
+        detail: `ID ${id} поставлен в очередь на сервере. Батч добавления выполняется раз в 10 секунд.`,
+        title: "Ожидаем серверный батч",
+        tone: "info"
       }
-
-      setFeedback(`ID ${result.skippedIds.join(", ")} уже существует`);
-    });
+    );
   };
 
   const handleSelect = async (item: Item) => {
@@ -163,25 +200,32 @@ const App = () => {
       rightList.setLocalItems(appendSelectedItem);
     }
 
-    setFeedback(null);
-    setIsMutating(true);
+    await withMutation(
+      async () => {
+        await selectionService.set([{ itemId: item.id, selected: true }]);
+        void leftList.syncToCount(previousAvailableItems.length);
 
-    try {
-      await selectionService.set([{ itemId: item.id, selected: true }]);
-      void leftList.syncToCount(previousAvailableItems.length);
+        if (rightSearch.length > 0) {
+          void rightList.syncToCount(previousSelectedItems.length + 1);
+        }
 
-      if (rightSearch.length > 0) {
-        void rightList.syncToCount(previousSelectedItems.length + 1);
+        setNotice({
+          detail: `ID ${item.id} добавлен в общий выбранный список.`,
+          title: "Выбор сохранён",
+          tone: "success"
+        });
+      },
+      {
+        detail: `Сохраняем выбор ID ${item.id} на сервере. Изменение будет общим для всех посетителей.`,
+        title: "Сохраняем выбор",
+        tone: "info"
       }
-    } catch (error) {
+    ).catch(() => {
       setAvailableItemsView(previousAvailableItems);
       setSelectedItemsView(previousSelectedItems);
       leftList.setLocalItems(() => previousAvailableItems);
       rightList.setLocalItems(() => previousSelectedItems);
-      setFeedback(error instanceof Error ? error.message : "Не удалось выбрать элемент");
-    } finally {
-      setIsMutating(false);
-    }
+    });
   };
 
   const handleDeselect = async (item: SelectedItem) => {
@@ -202,22 +246,28 @@ const App = () => {
       leftList.setLocalItems(insertAvailableItem);
     }
 
-    setFeedback(null);
-    setIsMutating(true);
-
-    try {
-      await selectionService.set([{ itemId: item.itemId, selected: false }]);
-      void leftList.syncToCount(previousAvailableItems.length);
-      void rightList.syncToCount(previousSelectedItems.length);
-    } catch (error) {
+    await withMutation(
+      async () => {
+        await selectionService.set([{ itemId: item.itemId, selected: false }]);
+        void leftList.syncToCount(previousAvailableItems.length);
+        void rightList.syncToCount(previousSelectedItems.length);
+        setNotice({
+          detail: `ID ${item.id} убран из общего выбранного списка.`,
+          title: "Изменение сохранено",
+          tone: "success"
+        });
+      },
+      {
+        detail: `Сохраняем удаление ID ${item.id}. Изменение будет общим для всех посетителей.`,
+        title: "Обновляем список",
+        tone: "info"
+      }
+    ).catch(() => {
       setAvailableItemsView(previousAvailableItems);
       setSelectedItemsView(previousSelectedItems);
       leftList.setLocalItems(() => previousAvailableItems);
       rightList.setLocalItems(() => previousSelectedItems);
-      setFeedback(error instanceof Error ? error.message : "Не удалось снять выбор");
-    } finally {
-      setIsMutating(false);
-    }
+    });
   };
 
   const handleSelectedDragEnd = async (event: DragEndEvent) => {
@@ -256,15 +306,25 @@ const App = () => {
 
     setSelectedItemsView(reorderedItems);
     rightList.setLocalItems(() => reorderedItems);
-    setFeedback(null);
 
-    try {
-      await selectionService.reorder(reorderedVisibleIds);
-    } catch (error) {
+    await withMutation(
+      async () => {
+        await selectionService.reorder(reorderedVisibleIds);
+        setNotice({
+          detail: "Новый порядок сохранён на сервере и восстановится после перезагрузки страницы.",
+          title: "Сортировка сохранена",
+          tone: "success"
+        });
+      },
+      {
+        detail: "Сохраняем новый порядок выбранных элементов на сервере.",
+        title: "Обновляем сортировку",
+        tone: "info"
+      }
+    ).catch(() => {
       setSelectedItemsView(previousItems);
       rightList.setLocalItems(() => previousItems);
-      setFeedback(error instanceof Error ? error.message : "Не удалось сохранить сортировку");
-    }
+    });
   };
 
   const createScrollHandler =
@@ -300,8 +360,23 @@ const App = () => {
             Левый контейнер показывает все невыбранные элементы, правый хранит глобальный выбранный порядок. Поиск не
             сохраняется, а выбор и сортировка сохраняются на сервере.
           </p>
+          <div className="hero-notes">
+            <div className="hero-note">
+              <strong>Общее состояние для всех</strong>
+              <span>Любой выбор, снятие выбора или reorder сразу влияет на общий список всех посетителей.</span>
+            </div>
+            <div className="hero-note">
+              <strong>Добавление работает через очередь</strong>
+              <span>Новые ID отправляются в серверный батч. Обновление интерфейса может занимать до 10 секунд.</span>
+            </div>
+          </div>
         </div>
-        {feedback ? <div className="feedback">{feedback}</div> : null}
+        {notice ? (
+          <div className={`feedback feedback-${notice.tone}`}>
+            <strong>{notice.title}</strong>
+            <p>{notice.detail}</p>
+          </div>
+        ) : null}
       </div>
 
       <section className="board">
@@ -340,8 +415,8 @@ const App = () => {
           isMutating={isMutating}
           listRef={rightListRef}
           onDeselect={handleDeselect}
-          onDragEnd={(event) => {
-            void handleSelectedDragEnd(event);
+          onDragEnd={(dragEvent) => {
+            void handleSelectedDragEnd(dragEvent);
           }}
           onDropOverChange={setIsSelectedDropOver}
           onScroll={createScrollHandler(rightList.loadMore, rightList.hasMore, rightList.isLoading, (element) => {

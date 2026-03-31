@@ -43,6 +43,7 @@
 ## Переменные окружения
 - `PORT`
 - `DATABASE_URL`
+- `DB_POOL_MAX`
 - `FRONTEND_URL`
 - `ADD_QUEUE_FLUSH_MS`
 - `SYNC_QUEUE_FLUSH_MS`

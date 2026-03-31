@@ -5,7 +5,7 @@ import { env } from "./env.js";
 export const pool = new Pool({
   application_name: "million-items-backend",
   connectionString: env.DATABASE_URL,
-  max: 20
+  max: env.DB_POOL_MAX
 });
 
 export const query = <TRow extends QueryResultRow = QueryResultRow>(

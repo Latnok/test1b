@@ -1,6 +1,18 @@
-const apiHost = typeof window === "undefined" ? "localhost" : window.location.hostname;
+const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 
-export const API_BASE_URL = `http://${apiHost}:4000/api/v1`;
+const getDefaultApiBaseUrl = () => {
+  if (typeof window === "undefined") {
+    return "http://localhost:4000/api/v1";
+  }
+
+  if (window.location.port === "5173" || window.location.port === "4173") {
+    return `${window.location.protocol}//${window.location.hostname}:4000/api/v1`;
+  }
+
+  return "/api/v1";
+};
+
+export const API_BASE_URL = configuredBaseUrl && configuredBaseUrl.length > 0 ? configuredBaseUrl : getDefaultApiBaseUrl();
 
 type RequestOptions = RequestInit & {
   query?: Record<string, string | number | undefined | null>;

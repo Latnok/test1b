@@ -14,6 +14,7 @@
     "lint": "npm run lint --workspaces",
     "seed": "npm run seed --workspace @million-items/backend",
     "test:browser-scroll": "node --test tests/browser-scroll.test.mjs",
+    "test:browser-right-drag-reorder": "node --test tests/browser-right-drag-reorder.test.mjs",
     "test:browser-selection-sync": "node --test tests/browser-selection-sync.test.mjs",
     "test:multi-user": "node --test tests/multi-user-shared-state.test.mjs",
     "test:deep-scroll": "node --test tests/deep-scroll.test.mjs",

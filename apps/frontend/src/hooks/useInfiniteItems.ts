@@ -14,6 +14,7 @@ export const useInfiniteItems = (idFilter: string, refreshKey: number) => {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const requestVersionRef = useRef(0);
   const loadingRef = useRef(false);
+  const itemsRef = useRef<Item[]>([]);
   const nextCursorRef = useRef<string | null>(null);
 
   const fetchPage = useCallback(async (reset: boolean, filter: string, cursor?: string | null) => {
@@ -54,28 +55,16 @@ export const useInfiniteItems = (idFilter: string, refreshKey: number) => {
     }
   }, []);
 
-  const fetchVisibleItems = useCallback(async (filter: string, targetCount: number) => {
-    const collectedItems: Item[] = [];
-    let cursor: string | undefined;
-    let nextCursor: string | null = null;
-    const desiredCount = Math.max(PAGE_SIZE, targetCount);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
-    do {
-      const response = await itemsService.list({
-        cursor,
-        id: filter || undefined,
-        limit: PAGE_SIZE
-      });
-
-      collectedItems.push(...response.items);
-      nextCursor = response.nextCursor;
-      cursor = nextCursor ?? undefined;
-    } while (collectedItems.length < desiredCount && nextCursor);
-
-    return {
-      items: collectedItems,
-      nextCursor
-    };
+  const setLocalItems = useCallback((updater: (currentItems: Item[]) => Item[]) => {
+    setItems((currentItems) => {
+      const nextItems = updater(currentItems);
+      itemsRef.current = nextItems;
+      return nextItems;
+    });
   }, []);
 
   useEffect(() => {
@@ -110,31 +99,60 @@ export const useInfiniteItems = (idFilter: string, refreshKey: number) => {
 
   const syncToCount = useCallback(
     async (targetCount: number) => {
-      if (loadingRef.current) {
+      const desiredCount = Math.max(PAGE_SIZE, targetCount);
+
+      if (loadingRef.current || itemsRef.current.length >= desiredCount || !nextCursorRef.current) {
         return;
       }
 
+      loadingRef.current = true;
+      setIsLoading(true);
       const requestVersion = ++requestVersionRef.current;
       setError(null);
 
       try {
-        const response = await fetchVisibleItems(idFilter, targetCount);
+        const collectedItems = [...itemsRef.current];
+        let cursor: string | null = nextCursorRef.current;
+        let lastNextCursor: string | null = nextCursorRef.current;
+
+        while (collectedItems.length < desiredCount && cursor) {
+          const remainingCount = desiredCount - collectedItems.length;
+          const response = await itemsService.list({
+            cursor: cursor ?? undefined,
+            id: idFilter || undefined,
+            limit: Math.min(PAGE_SIZE, remainingCount)
+          });
+
+          if (requestVersion !== requestVersionRef.current) {
+            return;
+          }
+
+          collectedItems.push(...response.items);
+          lastNextCursor = response.nextCursor;
+          cursor = response.nextCursor;
+        }
 
         if (requestVersion !== requestVersionRef.current) {
           return;
         }
 
-        setItems(response.items);
-        setNextCursor(response.nextCursor);
-        nextCursorRef.current = response.nextCursor;
-        setHasMore(Boolean(response.nextCursor));
+        setItems(collectedItems);
+        setNextCursor(lastNextCursor);
+        nextCursorRef.current = lastNextCursor;
+        setHasMore(Boolean(lastNextCursor));
       } catch (caughtError) {
         if (requestVersion === requestVersionRef.current) {
           setError(caughtError instanceof Error ? caughtError.message : "Failed to sync items");
         }
+      } finally {
+        if (requestVersion === requestVersionRef.current) {
+          setIsLoading(false);
+        }
+
+        loadingRef.current = false;
       }
     },
-    [fetchVisibleItems, idFilter]
+    [idFilter]
   );
 
   return {
@@ -144,6 +162,7 @@ export const useInfiniteItems = (idFilter: string, refreshKey: number) => {
     items,
     loadMore,
     reload,
+    setLocalItems,
     syncToCount
   };
 };

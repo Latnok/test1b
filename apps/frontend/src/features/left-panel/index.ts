@@ -1,2 +1,1 @@
-export {};
-
+export { LeftPanel } from "./LeftPanel";

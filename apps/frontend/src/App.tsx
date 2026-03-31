@@ -131,24 +131,26 @@ const SortableSelectedRow = ({
   item: SelectedItem;
   onRemove: (item: SelectedItem) => void;
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+  const { attributes, isDragging, listeners, setNodeRef, transform, transition } = useSortable({
+    disabled,
     id: item.itemId
   });
 
   return (
     <article
-      className="item-card item-card-sortable"
+      className={`item-card item-card-sortable ${isDragging ? "item-card-dragging" : ""}`}
       ref={setNodeRef}
       style={{
         transform: CSS.Transform.toString(transform),
         transition
       }}
+      {...attributes}
+      {...listeners}
     >
       <button
         aria-label={`Переместить элемент ${item.itemId}`}
         className="drag-handle"
-        {...attributes}
-        {...listeners}
+        disabled={disabled}
         type="button"
       >
         ::
@@ -158,7 +160,15 @@ const SortableSelectedRow = ({
         <strong>{item.title}</strong>
         <span>ID: {item.id}</span>
       </div>
-      <button className="secondary-button" disabled={disabled} onClick={() => onRemove(item)} type="button">
+      <button
+        className="secondary-button"
+        disabled={disabled}
+        onClick={() => onRemove(item)}
+        onPointerDown={(event) => {
+          event.stopPropagation();
+        }}
+        type="button"
+      >
         Убрать
       </button>
     </article>

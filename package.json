@@ -21,6 +21,7 @@
     "test:multi-user-queue": "npx tsx --test tests/multi-user-queue.test.ts",
     "test:read-cache": "npx tsx --test tests/read-cache.test.ts",
     "test:read-cache-expiry": "npx tsx --test tests/read-cache-expiry.test.ts",
+    "test:reorder-duplicate-ids": "npx tsx --test tests/reorder-duplicate-ids.test.ts",
     "test:reorder-dedup": "npx tsx --test tests/reorder-dedup.test.ts",
     "test:reorder-integrity": "npx tsx --test tests/reorder-integrity.test.ts",
     "test:reorder-queue": "npx tsx --test tests/reorder-queue.test.ts",

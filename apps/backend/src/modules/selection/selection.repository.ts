@@ -131,7 +131,15 @@ export class SelectionRepository {
     }));
     const currentOrder = currentRows.map((row) => row.itemId);
     const currentOrderSet = new Set(currentOrder);
-    const filteredItemIds = itemIds.filter((itemId) => currentOrderSet.has(itemId));
+    const seenItemIds = new Set<number>();
+    const filteredItemIds = itemIds.filter((itemId) => {
+      if (!currentOrderSet.has(itemId) || seenItemIds.has(itemId)) {
+        return false;
+      }
+
+      seenItemIds.add(itemId);
+      return true;
+    });
 
     if (filteredItemIds.length === 0) {
       return { orderedIds: [] };

@@ -226,6 +226,7 @@ button {
 
 .item-card-sortable {
   background: rgba(255, 252, 245, 0.95);
+  cursor: grab;
 }
 
 .item-card-draggable {
@@ -239,6 +240,11 @@ button {
   font-size: 1rem;
   height: 44px;
   width: 44px;
+}
+
+.item-card-dragging,
+.item-card-sortable:active {
+  cursor: grabbing;
 }
 
 .item-image {

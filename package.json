@@ -1,0 +1,34 @@
+{
+  "name": "million-items-selector",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:backend dev:frontend",
+    "dev:backend": "npm run dev --workspace @million-items/backend",
+    "dev:frontend": "npm run dev --workspace @million-items/frontend",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "seed": "npm run seed --workspace @million-items/backend",
+    "test:browser-scroll": "node --test tests/browser-scroll.test.mjs",
+    "test:browser-selection-sync": "node --test tests/browser-selection-sync.test.mjs",
+    "test:multi-user": "node --test tests/multi-user-shared-state.test.mjs",
+    "test:deep-scroll": "node --test tests/deep-scroll.test.mjs",
+    "test:edge-cases": "npm-run-all test:reorder-dedup test:read-cache-expiry test:filtered-reorder-edge",
+    "test:multi-user-queue": "npx tsx --test tests/multi-user-queue.test.ts",
+    "test:read-cache": "npx tsx --test tests/read-cache.test.ts",
+    "test:read-cache-expiry": "npx tsx --test tests/read-cache-expiry.test.ts",
+    "test:reorder-dedup": "npx tsx --test tests/reorder-dedup.test.ts",
+    "test:reorder-integrity": "npx tsx --test tests/reorder-integrity.test.ts",
+    "test:reorder-queue": "npx tsx --test tests/reorder-queue.test.ts",
+    "test:filtered-reorder-edge": "npx tsx --test tests/filtered-reorder-edge.test.ts"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "playwright": "^1.58.2",
+    "typescript": "^5.6.3"
+  }
+}
